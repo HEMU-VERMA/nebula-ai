@@ -1,4 +1,5 @@
 """Deterministic, provider-agnostic evolution engine."""
+
 from __future__ import annotations
 
 import hashlib
@@ -34,7 +35,7 @@ class EvolutionResult:
 
 def candidate_id(source: str, parent_id: str | None = None) -> str:
     """Return a stable identifier derived from candidate content and lineage."""
-    payload = f"{parent_id or ''}\0{source}".encode("utf-8")
+    payload = f"{parent_id or ''}\0{source}".encode()
     return hashlib.sha256(payload).hexdigest()[:16]
 
 
@@ -76,7 +77,7 @@ class EvolutionEngine:
             current = tuple(self.fitness.evaluate(item) for item in population)
             evaluations.extend(current)
             survivor, _ = max(
-                zip(population, current),
+                zip(population, current, strict=True),
                 key=lambda pair: pair[1].score,
             )
             if number == self.config.generations - 1:
@@ -91,7 +92,7 @@ class EvolutionEngine:
             item for generation in generations for item in generation.candidates
         )
         best = max(
-            zip(all_candidates, evaluations),
+            zip(all_candidates, evaluations, strict=True),
             key=lambda pair: pair[1].score,
             default=None,
         )
