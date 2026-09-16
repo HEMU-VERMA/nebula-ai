@@ -1,8 +1,9 @@
 """Core immutable data models for Nebula."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Final
 
 SCHEMA_VERSION: Final[int] = 1
@@ -29,9 +30,7 @@ class Evaluation:
     score: float
     passed: bool
     duration_seconds: float
-    measured_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    measured_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def __post_init__(self) -> None:
         if not self.candidate_id.strip():
@@ -46,9 +45,7 @@ class Generation:
 
     number: int
     candidates: tuple[Candidate, ...]
-    created_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     schema_version: int = SCHEMA_VERSION
 
     def __post_init__(self) -> None:
