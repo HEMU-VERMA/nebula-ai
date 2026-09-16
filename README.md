@@ -8,68 +8,81 @@ Nebula is an open-source framework for reproducible AI-guided software evolution
 
 ## Install
 
-Python 3.12+ is required.
+Python 3.12+:
 
     python -m pip install nebula-ai
 
-The package is currently alpha. Until its first PyPI release, install the repository in development mode:
+The package is alpha; until its first PyPI release, install the repository in development mode:
 
     python -m pip install -e ".[dev]"
 
-## Development
+## First evolution run
 
-    git clone https://github.com/HEMU-VERMA/nebula-ai.git
-    cd nebula-ai
-    python -m venv .venv
-    source .venv/bin/activate
-    python -m pip install -e ".[dev]"
+Nebula keeps the evolution engine provider-agnostic. You supply mutation and fitness policies:
 
-Run every quality gate:
+    from nebula import Candidate, Evaluation, EvolutionConfig, EvolutionEngine, candidate_id
+
+    class Mutator:
+        def mutate(self, candidate, rng):
+            source = candidate.source + "!"
+            return Candidate(
+                candidate_id=candidate_id(source, candidate.candidate_id),
+                source=source,
+                parent_id=candidate.candidate_id,
+            )
+
+    class Fitness:
+        def evaluate(self, candidate):
+            return Evaluation(
+                candidate_id=candidate.candidate_id,
+                score=float(len(candidate.source)),
+                passed=True,
+                duration_seconds=0.0,
+            )
+
+    result = EvolutionEngine(
+        EvolutionConfig(population_size=4, generations=10, seed=42),
+        Mutator(),
+        Fitness(),
+    ).run(Candidate(candidate_id=candidate_id("x"), source="x"))
+
+    print(result.best)
+
+## Safety boundary
+
+Nebula does **not** execute generated source code in the core engine. Any future execution backend must provide isolation, resource limits, filesystem restrictions, explicit network policy, and secret isolation.
+
+## Architecture
+
+    Objective → Mutator → Candidate → Isolated Execution → Fitness → Survivor → Lineage
+
+## Quality
 
     ruff check .
     mypy src
     pytest
+    python -m build
 
-## Architecture
-
-    Objective
-       |
-    Population
-       |
-    Mutator
-       |
-    Isolated candidate execution
-       |
-    Fitness evaluator
-       |
-    Survivors
-
-The first release deliberately starts with typed domain models and safety-oriented foundations. Future AI providers and arbitrary-code execution belong behind explicit interfaces and isolated execution boundaries.
-
-## Design principles
-
-- Reproducibility over magic: record configuration, seed, lineage and measurements.
-- Never execute untrusted mutations directly on the host.
-- Fitness is domain-specific: users define measurable objectives.
-- Every generated candidate should be testable and traceable.
+CI runs these gates on Python 3.12 and 3.13 and verifies a clean wheel installation.
 
 ## Roadmap
 
 - [x] Typed core data model
-- [x] Strict mypy configuration
-- [x] Reproducible evolution configuration
-- [ ] Mutation provider interface
-- [ ] Fitness/evaluator interface
+- [x] Deterministic evolution engine
+- [x] Stable candidate identity and lineage
+- [x] Strict mypy
+- [x] Wheel-install verification
+- [ ] Experiment manifest format
+- [ ] Production mutation/fidelity interfaces
 - [ ] Isolated execution backend
-- [ ] Local deterministic evolution engine
-- [ ] Git lineage and experiment manifests
+- [ ] Git lineage
 - [ ] LLM provider adapters
-- [ ] Web evolution visualizer
+- [ ] Evolution visualizer
 - [ ] Distributed workers
 
 ## Security
 
-Generated code is untrusted. Any execution backend must provide isolation, resource limits, filesystem restrictions, explicit network policy, timeouts, and secret isolation. See SECURITY.md.
+Generated code is untrusted. See SECURITY.md before implementing an execution backend.
 
 ## License
 
