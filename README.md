@@ -2,87 +2,114 @@
 
 **Software that evolves instead of being rewritten.**
 
-Nebula is an open-source framework for reproducible AI-guided software evolution.
+Nebula is a typed Python framework for reproducible, measurable software evolution. Instead of asking an AI for one answer, Nebula treats implementations as candidates and repeatedly **mutates → evaluates → selects** them.
 
-**Hypothesis → Mutation → Test → Measure → Survive**
+> Give Nebula an objective. Keep the candidates that actually improve.
+
+## 30-second demo
+
+```bash
+python -m pip install -e .
+nebula demo
+```
+
+You should see generations, candidate counts, fitness scores, and the surviving candidate. The demo is deterministic and does not call an LLM or execute generated code.
 
 ## Install
 
-Python 3.12+:
+```bash
+python -m pip install nebula-ai
+```
 
-    python -m pip install nebula-ai
+Python 3.12+ is supported.
 
-The package is alpha; until its first PyPI release, install the repository in development mode:
+## Use it as a library
 
-    python -m pip install -e ".[dev]"
+```python
+from nebula import Candidate, Evaluation, EvolutionConfig, EvolutionEngine, candidate_id
 
-## First evolution run
+class Mutator:
+    def mutate(self, candidate, rng):
+        source = candidate.source + "!"
+        return Candidate(
+            candidate_id(source, candidate.candidate_id),
+            source,
+            candidate.candidate_id,
+        )
 
-Nebula keeps the evolution engine provider-agnostic. You supply mutation and fitness policies:
+class Fitness:
+    def evaluate(self, candidate):
+        return Evaluation(candidate.candidate_id, float(len(candidate.source)), True, 0.0)
 
-    from nebula import Candidate, Evaluation, EvolutionConfig, EvolutionEngine, candidate_id
+result = EvolutionEngine(
+    EvolutionConfig(population_size=4, generations=10, seed=42),
+    Mutator(),
+    Fitness(),
+).run(Candidate(candidate_id("x"), "x"))
 
-    class Mutator:
-        def mutate(self, candidate, rng):
-            source = candidate.source + "!"
-            return Candidate(
-                candidate_id=candidate_id(source, candidate.candidate_id),
-                source=source,
-                parent_id=candidate.candidate_id,
-            )
+print(result.best)
+```
 
-    class Fitness:
-        def evaluate(self, candidate):
-            return Evaluation(
-                candidate_id=candidate.candidate_id,
-                score=float(len(candidate.source)),
-                passed=True,
-                duration_seconds=0.0,
-            )
+## Why Nebula exists
 
-    result = EvolutionEngine(
-        EvolutionConfig(population_size=4, generations=10, seed=42),
-        Mutator(),
-        Fitness(),
-    ).run(Candidate(candidate_id=candidate_id("x"), source="x"))
+Most AI coding tools optimize for **producing code**. Nebula is designed around a different loop: **producing candidates, measuring them, and preserving evidence of why a candidate survived**.
 
-    print(result.best)
+```text
+Objective
+   ↓
+Mutation → Candidate → Evaluation
+                 ↑         ↓
+                 └── Selection
+                      ↓
+                   Lineage
+                      ↓
+                 Experiment
+```
 
-## Safety boundary
+The core is provider-agnostic. LLMs, search algorithms, genetic operators, benchmarks, or human-written mutators can plug into the same interfaces.
 
-Nebula does **not** execute generated source code in the core engine. Any future execution backend must provide isolation, resource limits, filesystem restrictions, explicit network policy, and secret isolation.
+## Safety by architecture
 
-## Architecture
+The core engine does **not** execute generated source code. An execution backend is a separate trust boundary and must provide isolation, resource limits, filesystem restrictions, explicit network policy, and secret isolation.
 
-    Objective → Mutator → Candidate → Isolated Execution → Fitness → Survivor → Lineage
+## Project status
 
-## Quality
+Nebula is alpha. The stable foundation currently includes:
 
-    ruff check .
-    mypy src
-    pytest
-    python -m build
-
-CI runs these gates on Python 3.12 and 3.13 and verifies a clean wheel installation.
+- strict mypy typing
+- deterministic seeded evolution
+- immutable candidates, evaluations, and generations
+- stable candidate IDs and parent lineage
+- JSON experiment manifests
+- CLI entry point
+- CI on Python 3.12 and 3.13
+- wheel build and clean-install verification
 
 ## Roadmap
 
-- [x] Typed core data model
-- [x] Deterministic evolution engine
-- [x] Stable candidate identity and lineage
-- [x] Strict mypy
-- [x] Wheel-install verification
-- [ ] Experiment manifest format
-- [ ] Production mutation/fidelity interfaces
-- [ ] Isolated execution backend
-- [ ] Git lineage
-- [ ] LLM provider adapters
-- [ ] Evolution visualizer
+- [x] Typed evolution core
+- [x] Deterministic evolution
+- [x] Experiment manifests
+- [x] CLI demo
+- [ ] Benchmark suite
+- [ ] Real mutation providers
+- [ ] LLM adapters
+- [ ] Sandboxed execution
+- [ ] Git-native lineage
+- [ ] Web evolution visualizer
 - [ ] Distributed workers
 
-## Security
+## Documentation
 
-Generated code is untrusted. See SECURITY.md before implementing an execution backend.
+- [Getting Started](docs/getting-started.md)
+- [Core Concepts](docs/core-concepts.md)
+- [Effects & Handlers](docs/effects-and-handlers.md)
+- [Architecture](docs/architecture.md)
+- [Security](SECURITY.md)
+
+## Contributing
+
+Small, testable changes are preferred. Every change should pass Ruff, strict mypy, tests, wheel building, and clean installation in CI.
 
 ## License
 
