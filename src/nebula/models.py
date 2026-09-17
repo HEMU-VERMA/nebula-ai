@@ -24,13 +24,15 @@ class Candidate:
 
 @dataclass(frozen=True, slots=True)
 class Evaluation:
-    """A reproducible fitness measurement."""
+    """A fitness measurement; its timestamp is observational metadata."""
 
     candidate_id: str
     score: float
     passed: bool
     duration_seconds: float
-    measured_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    measured_at: datetime = field(
+        default_factory=lambda: datetime.now(UTC), compare=False
+    )
 
     def __post_init__(self) -> None:
         if not self.candidate_id.strip():
@@ -45,7 +47,9 @@ class Generation:
 
     number: int
     candidates: tuple[Candidate, ...]
-    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = field(
+        default_factory=lambda: datetime.now(UTC), compare=False
+    )
     schema_version: int = SCHEMA_VERSION
 
     def __post_init__(self) -> None:
