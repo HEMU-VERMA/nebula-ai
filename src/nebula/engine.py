@@ -68,7 +68,7 @@ class EvolutionEngine:
     def run(self, initial: Candidate) -> EvolutionResult:
         """Evolve an initial candidate and retain the highest-scoring candidate."""
         rng = random.Random(self.config.seed)
-        population = (initial,)
+        population: tuple[Candidate, ...] = (initial,)
         generations: list[Generation] = []
         evaluations: list[Evaluation] = []
 
