@@ -8,6 +8,7 @@ from .engine import (
     Mutator,
     candidate_id,
 )
+from .experiment import ExperimentManifest
 from .models import Candidate, Evaluation, EvolutionConfig, Generation
 
 __all__ = [
@@ -16,6 +17,7 @@ __all__ = [
     "EvolutionConfig",
     "EvolutionEngine",
     "EvolutionResult",
+    "ExperimentManifest",
     "Fitness",
     "Generation",
     "IdentityMutator",
